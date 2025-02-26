@@ -1270,7 +1270,7 @@ function renderChecklistItems(container, questionId, items, question) {
     }
 
     // Add severity slider for menstrual symptoms and health conditions
-    if (questionId === 'menstrualSymptomsChecklist' || questionId.includes('conditionSymptomSeverity')) {
+    if (questionId === 'menstrualSymptomsChecklist' || questionId.includes('conditionSymptoms_')) {
       const severityDiv = document.createElement('div');
       severityDiv.className = 'severity-slider';
       severityDiv.id = `severity-${sanitizedValue}`;
@@ -1291,7 +1291,7 @@ function renderChecklistItems(container, questionId, items, question) {
     const checkbox = checkboxDiv.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('change', function () {
       // Show/hide severity slider for symptoms
-      if (questionId === 'menstrualSymptomsChecklist' || questionId.includes('conditionSymptomSeverity')) {
+      if (questionId === 'menstrualSymptomsChecklist' || questionId.includes('conditionSymptoms_')) {
         const severityDiv = document.getElementById(`severity-${sanitizedValue}`);
         if (severityDiv) {
           severityDiv.style.display = this.checked ? 'block' : 'none';
