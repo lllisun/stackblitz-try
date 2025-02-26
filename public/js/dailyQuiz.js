@@ -1247,6 +1247,12 @@ function renderChecklistItems(container, questionId, items, question) {
       return;
     }
     container.closest('.question-item')?.classList.remove('hidden');
+    
+    // Hide the question title
+    const questionText = container.closest('.question-item')?.querySelector('.question-text');
+    if (questionText) {
+      questionText.style.display = 'none';
+    }
   }
   
   container.innerHTML = ''; // Clear existing content
@@ -1284,11 +1290,33 @@ function renderChecklistItems(container, questionId, items, question) {
       `;
     }
 
+    // Add severity slider for menstrual symptoms
+    if (questionId === 'menstrualSymptomsChecklist') {
+      const severityDiv = document.createElement('div');
+      severityDiv.className = 'severity-slider';
+      severityDiv.id = `severity-${sanitizedValue}`;
+      severityDiv.style.display = 'none';
+      severityDiv.innerHTML = `
+        <label>Severity (1-10):</label>
+        <input type="range" min="1" max="10" value="5" step="1" 
+          id="severity-input-${sanitizedValue}" class="styled-slider">
+        <span class="severity-value" id="severity-value-${sanitizedValue}">5</span>
+      `;
+      checkboxDiv.appendChild(severityDiv);
+    }
+
     container.appendChild(checkboxDiv);
 
     // Event listener for checkbox changes
     const checkbox = checkboxDiv.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('change', function () {
+      // Show/hide severity slider for menstrual symptoms
+      if (questionId === 'menstrualSymptomsChecklist') {
+        const severityDiv = document.getElementById(`severity-${sanitizedValue}`);
+        if (severityDiv) {
+          severityDiv.style.display = this.checked ? 'block' : 'none';
+        }
+      }
       const amountDiv = document.getElementById(`amount-${sanitizedValue}`);
       if (amountDiv) {
         amountDiv.style.display = this.checked ? 'block' : 'none';
@@ -1369,11 +1397,26 @@ function saveGroupAnswers(group) {
         : [];
 
       allItems.forEach((item) => {
-        const key = `${question.id}_${item.replace(/\s+/g, '_').toLowerCase()}`;
+        const sanitizedItem = item.replace(/\s+/g, '_').toLowerCase();
+        const key = `${question.id}_${sanitizedItem}`;
+        const isChecked = checkedItems.includes(item);
+        
+        // Save presence as 0/1
         quizAnswers[key] = {
-          answerValue: checkedItems.includes(item) ? 1 : 0,
+          answerValue: isChecked ? 1 : 0,
           answerType: 'checklist',
         };
+        
+        // Save severity for menstrual symptoms
+        if (question.id === 'menstrualSymptomsChecklist' && isChecked) {
+          const severityInput = document.getElementById(`severity-input-${sanitizedItem}`);
+          if (severityInput) {
+            quizAnswers[`${key}_severity`] = {
+              answerValue: parseInt(severityInput.value),
+              answerType: 'scalar'
+            };
+          }
+        }
       });
 
       // Special handling for "None" option
