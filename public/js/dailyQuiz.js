@@ -1239,38 +1239,27 @@ async function renderChecklist(question, containerId) {
 // Render individual checklist items
 function renderChecklistItems(container, questionId, items, question) {
   if (questionId === 'menstrualSymptomsChecklist') {
-    // Add conditional behavior for menstrual symptoms
     const menstruatingYes = document.querySelector('input[name="answer-currentlyMenstruatingQuestion"][value="yes"]');
-    if (!menstruatingYes || !menstruatingYes.checked) {
+    if (!menstruatingYes?.checked) {
       container.innerHTML = '';
       container.closest('.question-item')?.classList.add('hidden');
       return;
     }
     container.closest('.question-item')?.classList.remove('hidden');
-    
-    // Hide the question title
-    const questionText = container.closest('.question-item')?.querySelector('.question-text');
-    if (questionText) {
-      questionText.style.display = 'none';
-    }
   }
   
   container.innerHTML = ''; // Clear existing content
 
   items.forEach((item) => {
-    // Handle both simple strings and objects
-    const itemText =
-      typeof item === 'object' ? item.label || item.name || item.value : item;
+    const itemText = typeof item === 'object' ? item.label || item.name || item.value : item;
     const itemValue = typeof item === 'object' ? item.value || item.name : item;
-    const itemUnit = typeof item === 'object' ? item.unit : ''; // Optional unit
-
+    const itemUnit = typeof item === 'object' ? item.unit : '';
     const sanitizedValue = itemValue.toString().replace(/\s+/g, '_');
+    const checkboxId = `checkbox-${questionId}-${sanitizedValue}`;
 
     const checkboxDiv = document.createElement('div');
     checkboxDiv.className = 'checklist-item';
-
-    const checkboxId = `checkbox-${questionId}-${sanitizedValue}`;
-
+    
     checkboxDiv.innerHTML = `
       <label for="${checkboxId}" class="checkbox-label">
         <input type="checkbox" id="${checkboxId}" 
@@ -1290,24 +1279,8 @@ function renderChecklistItems(container, questionId, items, question) {
       `;
     }
 
-    // Add presence confirmation and severity slider for menstrual symptoms
-    if (questionId === 'menstrualSymptomsChecklist') {
-      const presenceDiv = document.createElement('div');
-      presenceDiv.className = 'symptom-presence';
-      presenceDiv.id = `presence-${sanitizedValue}`;
-      presenceDiv.style.display = 'none';
-      presenceDiv.innerHTML = `
-        <div class="presence-options">
-          <label>Is this symptom present today?</label>
-          <div>
-            <input type="radio" name="presence-${sanitizedValue}" value="yes" id="presence-yes-${sanitizedValue}">
-            <label for="presence-yes-${sanitizedValue}">Yes</label>
-            <input type="radio" name="presence-${sanitizedValue}" value="no" id="presence-no-${sanitizedValue}">
-            <label for="presence-no-${sanitizedValue}">No</label>
-          </div>
-        </div>
-      `;
-      
+    // Add severity slider for menstrual symptoms and health conditions
+    if (questionId === 'menstrualSymptomsChecklist' || questionId.includes('conditionSymptomSeverity')) {
       const severityDiv = document.createElement('div');
       severityDiv.className = 'severity-slider';
       severityDiv.id = `severity-${sanitizedValue}`;
@@ -1319,15 +1292,7 @@ function renderChecklistItems(container, questionId, items, question) {
         <span class="severity-value" id="severity-value-${sanitizedValue}">5</span>
       `;
       
-      checkboxDiv.appendChild(presenceDiv);
       checkboxDiv.appendChild(severityDiv);
-      
-      // Add event listener for presence radio buttons
-      presenceDiv.addEventListener('change', function(e) {
-        if (e.target.type === 'radio') {
-          severityDiv.style.display = e.target.value === 'yes' ? 'block' : 'none';
-        }
-      });
     }
 
     container.appendChild(checkboxDiv);
@@ -1335,20 +1300,11 @@ function renderChecklistItems(container, questionId, items, question) {
     // Event listener for checkbox changes
     const checkbox = checkboxDiv.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('change', function () {
-      // Show/hide presence confirmation for menstrual symptoms
-      if (questionId === 'menstrualSymptomsChecklist') {
-        const presenceDiv = document.getElementById(`presence-${sanitizedValue}`);
+      // Show/hide severity slider for symptoms
+      if (questionId === 'menstrualSymptomsChecklist' || questionId.includes('conditionSymptomSeverity')) {
         const severityDiv = document.getElementById(`severity-${sanitizedValue}`);
-        if (presenceDiv) {
-          presenceDiv.style.display = this.checked ? 'block' : 'none';
-          // Reset and hide severity when unchecked
-          if (!this.checked) {
-            const radioButtons = presenceDiv.querySelectorAll('input[type="radio"]');
-            radioButtons.forEach(radio => radio.checked = false);
-            if (severityDiv) {
-              severityDiv.style.display = 'none';
-            }
-          }
+        if (severityDiv) {
+          severityDiv.style.display = this.checked ? 'block' : 'none';
         }
       }
       const amountDiv = document.getElementById(`amount-${sanitizedValue}`);
