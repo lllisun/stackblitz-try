@@ -1066,6 +1066,14 @@ function displayQuestionGroup(groupIndex, container) {
   toggles.forEach((toggle) => {
     toggle.addEventListener('change', function () {
       handleConditionalQuestions();
+      
+      // Special handling for menstrual symptoms
+      if (this.name === 'answer-currentlyMenstruatingQuestion') {
+        const symptomsContainer = document.getElementById('checklist-container-menstrualSymptomsChecklist');
+        if (symptomsContainer) {
+          renderChecklist({ id: 'menstrualSymptomsChecklist' }, 'checklist-container-menstrualSymptomsChecklist');
+        }
+      }
     });
   });
 
@@ -1230,6 +1238,17 @@ async function renderChecklist(question, containerId) {
 }
 // Render individual checklist items
 function renderChecklistItems(container, questionId, items, question) {
+  if (questionId === 'menstrualSymptomsChecklist') {
+    // Add conditional behavior for menstrual symptoms
+    const menstruatingYes = document.querySelector('input[name="answer-currentlyMenstruatingQuestion"][value="yes"]');
+    if (!menstruatingYes || !menstruatingYes.checked) {
+      container.innerHTML = '';
+      container.closest('.question-item')?.classList.add('hidden');
+      return;
+    }
+    container.closest('.question-item')?.classList.remove('hidden');
+  }
+  
   container.innerHTML = ''; // Clear existing content
 
   items.forEach((item) => {
