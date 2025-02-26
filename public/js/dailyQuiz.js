@@ -657,52 +657,42 @@ function generateDynamicQuestionsAndRules(profileData) {
     });
   }
 
-  // --- Health Conditions - Symptom Severity Questions and Rules ---
+  // --- Health Conditions - Symptom Checklist and Severity ---
   if (profileData.conditions?.track === 1 && profileData.conditions?.items) {
     profileData.conditions.items.forEach((condition) => {
       const conditionName = condition.name;
       const symptoms = condition.symptoms;
 
-      symptoms.forEach((symptom) => {
-        if (symptom) {
-          const questionId = `conditionSymptomSeverity_${conditionName
-            .toLowerCase()
-            .replace(/ /g, '_')}_${symptom.toLowerCase().replace(/ /g, '_')}`;
+      if (symptoms && symptoms.length > 0) {
+        const questionId = `conditionSymptoms_${conditionName.toLowerCase().replace(/ /g, '_')}`;
+        
+        dynamicQuestions.push({
+          id: questionId,
+          text: `Please check any symptoms of ${conditionName} you are experiencing today:`,
+          answerType: 'checklist',
+          options: symptoms.map(symptom => ({
+            value: symptom,
+            label: symptom
+          })),
+          tags: [
+            'generalHealthWellbeing',
+            'health-conditions',
+            'condition-tracking',
+            'symptoms',
+            `condition-${conditionName.toLowerCase().replace(/ /g, '_')}`
+          ],
+          group: 'conditions'
+        });
 
-          dynamicQuestions.push({
-            id: questionId,
-            text: `On a scale of 1 to 10, how would you rate the severity of your '${symptom}' related to your condition '${conditionName}' today?`,
-            answerType: 'slider',
-            min: 1,
-            max: 10,
-            step: 1,
-            defaultValue: 5,
-            tags: [
-              'generalHealthWellbeing',
-              'health-conditions',
-              'condition-tracking',
-              'symptoms',
-              'scalar',
-              `condition-${conditionName.toLowerCase().replace(/ /g, '_')}`,
-              `symptom-${symptom.toLowerCase().replace(/ /g, '_')}`,
-            ],
-            group: 'conditions',
-          });
-
-          dynamicRules.push({
-            id: `rule_condition_symptom_severity_${conditionName
-              .toLowerCase()
-              .replace(/ /g, '_')}_${symptom.toLowerCase().replace(/ /g, '_')}`,
-            questionId: questionId,
-            quizType: 'generalHealthWellbeing',
-            triggerCondition: (profileData) =>
-              profileData.conditions.track === 1 &&
-              profileData.conditions.items.some(
-                (c) => c.name === conditionName && c.symptoms.includes(symptom)
-              ),
-          });
-        }
-      });
+        dynamicRules.push({
+          id: `rule_condition_symptoms_${conditionName.toLowerCase().replace(/ /g, '_')}`,
+          questionId: questionId,
+          quizType: 'generalHealthWellbeing',
+          triggerCondition: (profileData) =>
+            profileData.conditions.track === 1 &&
+            profileData.conditions.items.some(c => c.name === conditionName)
+        });
+      }
     });
   }
 
