@@ -657,37 +657,62 @@ function generateDynamicQuestionsAndRules(profileData) {
     });
   }
 
-  // --- Health Conditions - Symptom Severity Questions and Rules ---
+  // --- Health Conditions - Checklist and Severity Questions ---
   if (profileData.conditions?.track === 1 && profileData.conditions?.items) {
+    // First add the checklist question for all symptoms
+    const allSymptoms = [];
     profileData.conditions.items.forEach((condition) => {
-      const conditionName = condition.name;
-      const symptoms = condition.symptoms;
+      condition.symptoms.forEach((symptom) => {
+        if (symptom && !allSymptoms.includes(symptom)) {
+          allSymptoms.push(symptom);
+        }
+      });
+    });
 
-      symptoms.forEach((symptom) => {
-        if (symptom) {
-          const questionId = `conditionSymptomSeverity_${conditionName
-            .toLowerCase()
-            .replace(/ /g, '_')}_${symptom.toLowerCase().replace(/ /g, '_')}`;
+    dynamicQuestions.push({
+      id: 'healthConditionsChecklist',
+      text: 'Which of the following health conditions are you experiencing today?',
+      answerType: 'checklist',
+      options: allSymptoms.map(symptom => ({
+        value: symptom,
+        label: symptom
+      })),
+      tags: [
+        'generalHealthWellbeing',
+        'health-conditions',
+        'condition-tracking',
+        'symptoms',
+      ],
+      group: 'conditions',
+    });
 
-          dynamicQuestions.push({
-            id: questionId,
-            text: `On a scale of 1 to 10, how would you rate the severity of your '${symptom}' related to your condition '${conditionName}' today?`,
-            answerType: 'slider',
-            min: 1,
-            max: 10,
-            step: 1,
-            defaultValue: 5,
-            tags: [
-              'generalHealthWellbeing',
-              'health-conditions',
-              'condition-tracking',
-              'symptoms',
-              'scalar',
-              `condition-${conditionName.toLowerCase().replace(/ /g, '_')}`,
-              `symptom-${symptom.toLowerCase().replace(/ /g, '_')}`,
-            ],
-            group: 'conditions',
-          });
+    // Then add severity questions for each symptom
+    allSymptoms.forEach((symptom) => {
+      if (symptom) {
+        const questionId = `conditionSymptomSeverity_${symptom.toLowerCase().replace(/ /g, '_')}`;
+        
+        dynamicQuestions.push({
+          id: questionId,
+          text: `How severe is your ${symptom}?`,
+          answerType: 'slider',
+          min: 1,
+          max: 10,
+          step: 1,
+          defaultValue: 5,
+          tags: [
+            'generalHealthWellbeing',
+            'health-conditions',
+            'condition-tracking',
+            'symptoms',
+            'scalar',
+            `symptom-${symptom.toLowerCase().replace(/ /g, '_')}`,
+          ],
+          group: 'conditions',
+          conditionalOn: {
+            questionId: 'healthConditionsChecklist',
+            value: symptom
+          }
+        });
 
           dynamicRules.push({
             id: `rule_condition_symptom_severity_${conditionName
@@ -1290,24 +1315,8 @@ function renderChecklistItems(container, questionId, items, question) {
       `;
     }
 
-    // Add presence confirmation and severity slider for menstrual symptoms
+    // Add severity slider for menstrual symptoms
     if (questionId === 'menstrualSymptomsChecklist') {
-      const presenceDiv = document.createElement('div');
-      presenceDiv.className = 'symptom-presence';
-      presenceDiv.id = `presence-${sanitizedValue}`;
-      presenceDiv.style.display = 'none';
-      presenceDiv.innerHTML = `
-        <div class="presence-options">
-          <label>Is this symptom present today?</label>
-          <div>
-            <input type="radio" name="presence-${sanitizedValue}" value="yes" id="presence-yes-${sanitizedValue}">
-            <label for="presence-yes-${sanitizedValue}">Yes</label>
-            <input type="radio" name="presence-${sanitizedValue}" value="no" id="presence-no-${sanitizedValue}">
-            <label for="presence-no-${sanitizedValue}">No</label>
-          </div>
-        </div>
-      `;
-      
       const severityDiv = document.createElement('div');
       severityDiv.className = 'severity-slider';
       severityDiv.id = `severity-${sanitizedValue}`;
@@ -1319,15 +1328,7 @@ function renderChecklistItems(container, questionId, items, question) {
         <span class="severity-value" id="severity-value-${sanitizedValue}">5</span>
       `;
       
-      checkboxDiv.appendChild(presenceDiv);
       checkboxDiv.appendChild(severityDiv);
-      
-      // Add event listener for presence radio buttons
-      presenceDiv.addEventListener('change', function(e) {
-        if (e.target.type === 'radio') {
-          severityDiv.style.display = e.target.value === 'yes' ? 'block' : 'none';
-        }
-      });
     }
 
     container.appendChild(checkboxDiv);
@@ -1335,20 +1336,11 @@ function renderChecklistItems(container, questionId, items, question) {
     // Event listener for checkbox changes
     const checkbox = checkboxDiv.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('change', function () {
-      // Show/hide presence confirmation for menstrual symptoms
+      // Show/hide severity slider for menstrual symptoms
       if (questionId === 'menstrualSymptomsChecklist') {
-        const presenceDiv = document.getElementById(`presence-${sanitizedValue}`);
         const severityDiv = document.getElementById(`severity-${sanitizedValue}`);
-        if (presenceDiv) {
-          presenceDiv.style.display = this.checked ? 'block' : 'none';
-          // Reset and hide severity when unchecked
-          if (!this.checked) {
-            const radioButtons = presenceDiv.querySelectorAll('input[type="radio"]');
-            radioButtons.forEach(radio => radio.checked = false);
-            if (severityDiv) {
-              severityDiv.style.display = 'none';
-            }
-          }
+        if (severityDiv) {
+          severityDiv.style.display = this.checked ? 'block' : 'none';
         }
       }
       const amountDiv = document.getElementById(`amount-${sanitizedValue}`);
