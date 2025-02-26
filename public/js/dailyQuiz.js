@@ -1290,8 +1290,24 @@ function renderChecklistItems(container, questionId, items, question) {
       `;
     }
 
-    // Add severity slider for menstrual symptoms
+    // Add presence confirmation and severity slider for menstrual symptoms
     if (questionId === 'menstrualSymptomsChecklist') {
+      const presenceDiv = document.createElement('div');
+      presenceDiv.className = 'symptom-presence';
+      presenceDiv.id = `presence-${sanitizedValue}`;
+      presenceDiv.style.display = 'none';
+      presenceDiv.innerHTML = `
+        <div class="presence-options">
+          <label>Is this symptom present today?</label>
+          <div>
+            <input type="radio" name="presence-${sanitizedValue}" value="yes" id="presence-yes-${sanitizedValue}">
+            <label for="presence-yes-${sanitizedValue}">Yes</label>
+            <input type="radio" name="presence-${sanitizedValue}" value="no" id="presence-no-${sanitizedValue}">
+            <label for="presence-no-${sanitizedValue}">No</label>
+          </div>
+        </div>
+      `;
+      
       const severityDiv = document.createElement('div');
       severityDiv.className = 'severity-slider';
       severityDiv.id = `severity-${sanitizedValue}`;
@@ -1302,7 +1318,16 @@ function renderChecklistItems(container, questionId, items, question) {
           id="severity-input-${sanitizedValue}" class="styled-slider">
         <span class="severity-value" id="severity-value-${sanitizedValue}">5</span>
       `;
+      
+      checkboxDiv.appendChild(presenceDiv);
       checkboxDiv.appendChild(severityDiv);
+      
+      // Add event listener for presence radio buttons
+      presenceDiv.addEventListener('change', function(e) {
+        if (e.target.type === 'radio') {
+          severityDiv.style.display = e.target.value === 'yes' ? 'block' : 'none';
+        }
+      });
     }
 
     container.appendChild(checkboxDiv);
@@ -1310,11 +1335,20 @@ function renderChecklistItems(container, questionId, items, question) {
     // Event listener for checkbox changes
     const checkbox = checkboxDiv.querySelector('input[type="checkbox"]');
     checkbox.addEventListener('change', function () {
-      // Show/hide severity slider for menstrual symptoms
+      // Show/hide presence confirmation for menstrual symptoms
       if (questionId === 'menstrualSymptomsChecklist') {
+        const presenceDiv = document.getElementById(`presence-${sanitizedValue}`);
         const severityDiv = document.getElementById(`severity-${sanitizedValue}`);
-        if (severityDiv) {
-          severityDiv.style.display = this.checked ? 'block' : 'none';
+        if (presenceDiv) {
+          presenceDiv.style.display = this.checked ? 'block' : 'none';
+          // Reset and hide severity when unchecked
+          if (!this.checked) {
+            const radioButtons = presenceDiv.querySelectorAll('input[type="radio"]');
+            radioButtons.forEach(radio => radio.checked = false);
+            if (severityDiv) {
+              severityDiv.style.display = 'none';
+            }
+          }
         }
       }
       const amountDiv = document.getElementById(`amount-${sanitizedValue}`);
