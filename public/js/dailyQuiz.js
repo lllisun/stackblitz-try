@@ -72,9 +72,11 @@ function submitDailyQuiz() {
   for (const [questionId, answerObj] of Object.entries(quizAnswers)) {
     const { answerValue, answerType } = answerObj;
 
-    // Check if the answer type is 'textarea' and the value is empty. If so, skip processing this answer.
+    // For textarea type (dailyNotes), allow empty submissions
     if (answerType === "textarea" && answerValue.trim() === "") {
-      continue; // Skip processing for empty textarea, specifically 'dailyNotes'
+      // Still include the empty note in the submission
+      quizDataToSave[questionId] = "";
+      continue;
     }
 
     // Process answer based on type
